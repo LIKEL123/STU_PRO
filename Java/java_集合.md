@@ -48,7 +48,9 @@ map：表示一组映射关系或者键值对
 
 4、HashSet底层就是HashMap，LinkedHashSet是HashSet子类，TreeSet底层是TreeMap使用红黑树
 
-## 四、Map
+5、HaseSet底层就是HashMap，向Set集合添加数据，会成为map集合key值，所以集合set不能重复
+
+## 四、Map(最最最常用的集合)
 
 1、什么是Map
 	我们常会看到这样的一种集合：IP地址与主机名，身份证号与个人，系统用户名与系统用户对象等，这种一一对应的关系，就叫做映射。  Java提供了专门的集合类用来存放这种对象关系的对象，即`java.util.Map<K,V>`接口。 
@@ -65,13 +67,33 @@ map：表示一组映射关系或者键值对
 
 ​	2)根据key获取对应的value : get(object key)
 
-​	3)移除：remove(object key)
-
-​	4)返回map集合所有的key:  keySet()  得到的是一个Set（）集合
+ 	4)返回map集合所有的key:  keySet()  得到的是一个Set（）集合
 
 ​	5)返回map集合所有的value: values()   得到的是Collection()
 
 ​	6清空map集合：            clear()
 
 5、Map集合遍历
+
+​	第一种  获取map里面所有的key，根据key获取value值
+
+​	第二种  获取map里面key-value关系，获取key和value
+
+```java
+//第一种
+Set<String> allKey = map.keySet();
+//所有的key的set集合遍历
+for (String s : allKey) {
+  //根据每个key获取对应的vaule
+  String value = map.get(s);
+  System.out.println("key:"+s+"\nvalue:"+value);
+}
+
+//第二种
+Set<Map.Entry<String, String>> entrys = map.entrySet();
+for (Map.Entry<String, String> entry : entrys) {
+  String key = entry.getKey();
+  String value = entry.getValue();
+  System.out.println(key+"::"+value;}
+```
 
