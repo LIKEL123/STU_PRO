@@ -280,6 +280,19 @@ public class FileDemo2 {
 （2）字符输入流 Reader    子类 FileReader
 
 ```java
+public class ReaderDemo {
+
+    public static void main(String[] args) throws Exception {
+        Reader reader = new FileReader("E:\\0224\\b.txt");
+        //字符数组读取
+        char[] cbuf = new char[1024];
+        int len;
+        while((len=reader.read(cbuf))!=-1) {
+            System.out.println(new String(cbuf,0,len));
+        }
+        reader.close();
+    }
+}
 
 ```
 
@@ -287,11 +300,157 @@ public class FileDemo2 {
 
 （1）缓冲流
 
-（2）转换流
+​		缓冲：提高写速度
+
+​		缓存：提高读速度
+
+* 字节输入流   InputStream   --> BufferedInputStream
+
+* 字节输出流  OutputStream -->  BufferedOutputStream
+
++ 字符输入流 Reader --> BufferedReader
+
++ 字符输出流 Writer --> BufferedWriter
+
+```java
+   //缓冲流实现
+    @Test
+    public void test02() throws Exception {
+        // 记录开始时间
+        long start = System.currentTimeMillis();
+        // 创建流对象
+        BufferedInputStream fis = new BufferedInputStream(new FileInputStream("E:\\01.mp4"));
+        BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream("F:\\01.mp4"));
+        // 读写数据
+        int b;
+        while ((b = fis.read()) != -1) {
+            fos.write(b);
+        }
+
+        fos.close();
+        fis.close();
+
+        // 记录结束时间
+        long end = System.currentTimeMillis();
+        System.out.println("普通流复制时间:"+(end - start)+" 毫秒");
+    }	
+```
+
+ （2）转换流：转换编码方式
 
 （3）数据流
 
-（4）序列化操作
+ 在前面学习的IO流中，要么将数据转换成字节数组，要么是按照字符处理，若果要在程序中直接处理Java的基本数据类型，使用数据流来进行实现
+
+数据流相关类
+
+1）写操作 
+
+2）读操作
+
+```java
+public class TestBuffDemo {
+    public static void main(String[] args) throws IOException {
+        String name = "小强";
+        char gender = '男';
+        //创建写数据流，把普通的流包进去
+        DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream("game.dat"));
+        //写入内容
+        dataOutputStream.writeUTF(name);
+        dataOutputStream.writeChar(gender);
+
+        //数据流关闭
+        dataOutputStream.close();
+        //删除这个创建的文件
+        File file = new File("game.dat");
+        boolean delete = file.delete();
+        System.out.println(delete);
+
+    }
+
+    @Test
+    public void readDataStream() throws  Exception {
+        DataInputStream dataInputStream = new DataInputStream(new FileInputStream("game.dat"));
+        String name = dataInputStream.readUTF();
+        char gender = dataInputStream.readChar();
+        System.out.println(name+"," +  gender);
+    }
+}
+
+```
 
 
+
+8、序列化操作
+
+(1)序列化：对象转换成字节
+
+(2)反序列化：字节转换成对象
+
+(3)序列化相关类
+
++ 1. 对象编程字节：ObjectOutputStream
+  2. 字节编程对象：ObejectInputStream
+
+(4) 序列化代码
+
+```java
+/*
+演示序列化和序列化操作
+ */
+public class IoStreamDemo2 {
+
+
+    public static void main(String[] args) throws IOException {
+        Employee employee = new Employee("lucy","China");
+
+
+        //创建序列化对象
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream("/employee.txt"));
+
+        objectOutputStream.writeObject(employee);
+
+
+        //关闭资源
+        objectOutputStream.close();
+
+        System.out.println("Serialized data is saved...");
+
+    }
+
+
+}
+ // 要去实现序列化接口 ， 不然会报错
+class Employee implements Serializable {
+    public Employee(String name, String address) {
+        this.name = name;
+        this.address = address;
+    }
+    public String   name;
+    public String   address;
+}
+```
+
+(5) 反序列化代码
+
+差不多
+
+
+
+9、打印流 PrintStream
+
+改变打印的 方向  new PrintStream("ps.txt");
+
+10、
+
+```	properties
+try-catch在jdk1.7以后新的写法
+try(需要关闭的资源对象的声明){
+    业务逻辑代码
+}catch(异常类型 e){
+    处理异常代码
+}catch(异常类型 e){
+    处理异常代码
+}
+```
 
