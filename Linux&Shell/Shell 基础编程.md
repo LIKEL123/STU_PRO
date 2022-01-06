@@ -176,6 +176,162 @@ dirname
 	dirname 文件绝对路径		（功能描述：从给定的包含绝对路径的文件名中去除文件名（非目录的部分），然后返回剩下的路径（目录的部分））
 ```
 
+```shell
+自定义函数
+1）基本语法
+[ function ] funname[()]
+{
+	Action;
+	[return int;]
+}
+funname
+2）经验技巧
+（1）必须在调用函数地方之前，先声明函数，shell脚本是逐行运行。不会像其它语言一样先编译。
+（2）函数返回值，只能通过$?系统变量获得，可以显示加：return返回，如果不加，将以最后一条命令运行结果，作为返回值。return后跟数值n(0-255)
+3）案例实操
+计算两个输入参数的和
+[atguigu@hadoop101 datas]$ touch fun.sh
+[atguigu@hadoop101 datas]$ vim fun.sh
+
+#!/bin/bash
+function sum()
+{
+    s=0
+    s=$[ $1 + $2 ]
+    echo "$s"
+}
+
+read -p "Please input the number1: " n1;
+read -p "Please input the number2: " n2;
+sum $n1 $n2;
+
+[atguigu@hadoop101 datas]$ chmod 777 fun.sh
+[atguigu@hadoop101 datas]$ ./fun.sh 
+Please input the number1: 2
+Please input the number2: 5
+7
+```
+
+### 第九章 Shell工具 重点**
+
+##### 
+
++ cut 
+
+基础语法：
+
+```shell
+基本用法
+cut [选项参数]  filename
+说明：默认分隔符是制表符
+2）选项参数说明
+选项参数	功能
+-f	列号，提取第几列
+-d	分隔符，按照指定分隔符分割列
+-c	指定具体的字符
+```
+
+案例实操：
+
+```shell
+案例实操
+（1）数据准备
+[atguigu@hadoop101 datas]$ touch cut.txt
+[atguigu@hadoop101 datas]$ vim cut.txt
+dong shen
+guan zhen
+wo  wo
+lai  lai
+le  le
+（2）切割cut.txt第一列
+[atguigu@hadoop101 datas]$ cut -d " " -f 1 cut.txt 
+dong
+guan
+wo
+lai
+le
+（3）切割cut.txt第二、三列
+[atguigu@hadoop101 datas]$ cut -d " " -f 2,3 cut.txt 
+shen
+zhen
+wo
+lai
+le
+（4）在cut.txt文件中切割出guan
+[atguigu@hadoop101 datas]$ cat cut.txt | grep "guan" | cut -d " " -f 1
+guan
+（5）选取系统PATH变量值，第2个“：”开始后的所有路径：
+[atguigu@hadoop101 datas]$ echo $PATH
+/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/atguigu/bin
+
+[atguigu@hadoop102 datas]$ echo $PATH | cut -d: -f 3-
+/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/home/atguigu/bin
+（6）切割ifconfig 后打印的IP地址
+[atguigu@hadoop101 datas]$ ifconfig ens33 | grep netmask | cut -d "n" -f 2 | cut -d " " -f 2
+192.168.1.102
+```
+
++ awk
+
+  **基本用法**
+
+  ```shell
+  awk [选项参数] ‘pattern1{action1}  pattern2{action2}...’ filename
+  pattern：表示AWK在数据中查找的内容，就是匹配模式
+  action：在找到匹配内容时所执行的一系列命令
+  
+  选项参数说明
+  选项参数	功能
+  -F	指定输入文件折分隔符
+  -v	赋值一个用户定义变量
+  ```
+
+  ```shell
+  （1）数据准备
+  [atguigu@hadoop102 datas]$ sudo cp /etc/passwd ./
+  （2）搜索passwd文件以root关键字开头的所有行，并输出该行的第7列。
+  [atguigu@hadoop102 datas]$ awk -F: '/^root/{print $7}' passwd 
+  /bin/bash
+  （3）搜索passwd文件以root关键字开头的所有行，并输出该行的第1列和第7列，中间以“，”号分割。
+  [atguigu@hadoop102 datas]$ awk -F: '/^root/{print $1","$7}' passwd 
+  root,/bin/bash
+  注意：只有匹配了pattern的行才会执行action
+  （4）只显示/etc/passwd的第一列和第七列，以逗号分割，且在所有行前面添加列名user，shell在最后一行添加"dahaige，/bin/zuishuai"。
+  [atguigu@hadoop102 datas]$ awk -F : 'BEGIN{print "user, shell"} {print $1","$7} END{print "dahaige,/bin/zuishuai"}' passwd
+  user, shell
+  root,/bin/bash
+  bin,/sbin/nologin
+  。。。
+  atguigu,/bin/bash
+  dahaige,/bin/zuishuai
+  注意：BEGIN 在所有数据读取行之前执行；END 在所有数据执行之后执行。
+  （5）将passwd文件中的用户id增加数值1并输出
+  [atguigu@hadoop102 datas]$ awk -v i=1 -F: '{print $3+i} ' passwd
+  1
+  2
+  3
+  4
+  4）awk的内置变量
+  变量	说明
+  FILENAME	文件名
+  NR	已读的记录数
+  NF	浏览记录的域的个数（切割后，列的个数）
+  5）案例实操
+  （1）统计passwd文件名，每行的行号，每行的列数
+  [atguigu@hadoop102 datas]$ awk -F: '{print "filename:"  FILENAME ", linenumber:" NR  ",columns:" NF}' passwd 
+  filename:passwd, linenumber:1,columns:7
+  filename:passwd, linenumber:2,columns:7
+  filename:passwd, linenumber:3,columns:7
+  （2）切割IP
+  [atguigu@hadoop102 datas]$ ifconfig ens33 | grep netmask | awk -F " " '{print $2}'
+  192.168.1.102
+  （3）查询sed.txt中空行所在的行号
+  [atguigu@hadoop102 datas]$ awk '/^$/{print NR}' sed.txt 
+  5
+  ```
+
+  
+
 
 
 
