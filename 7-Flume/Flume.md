@@ -865,3 +865,238 @@ flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/multi/flume1.conf -n a1 -
 拦截器的java代码实现
 ```
 
+## 8.自定义source，sink 和Ganglia
+
+```properties
+6. 自定义Source
+flume4.conf 
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = com.atguigu.flume.source.MySource
+a1.sources.r1.prefix = log--
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = logger
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/mysource-flume-logger.conf -n a1 -Dflume.root.logger=INFO,console
+
+======================================================================
+
+7. 自定义Sink
+
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = com.atguigu.flume.source.MySource
+a1.sources.r1.prefix = log--
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = com.atguigu.flume.sink.MySink
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/mysource-flume-mysink.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+8. ganglia监控
+flume-ng agent \
+-c $FLUME_HOME/conf \
+-n a1 \
+-f $FLUME_HOME/jobs/netcat-flume-logger.conf \
+-Dflume.root.logger=INFO,console \
+-Dflume.monitoring.type=ganglia \
+-Dflume.monitoring.hosts=hadoop102:8649
+
+```
+
+Java代码
+
+```java
+官方也提供了自定义source的接口：
+https://flume.apache.org/FlumeDeveloperGuide.html#source根据官方说明自定义MySource需要继承AbstractSource类并实现Configurable和PollableSource接口。
+实现相应方法：
+getBackOffSleepIncrement() //backoff 步长
+getMaxBackOffSleepInterval()//backoff 最长时间
+configure(Context context)//初始化context（读取配置文件内容）
+process()//获取数据封装成event并写入channel，这个方法将被循环调用。
+使用场景：读取MySQL数据或者其他文件系统。
+
+（1）导入pom依赖
+<dependencies>
+    <dependency>
+        <groupId>org.apache.flume</groupId>
+        <artifactId>flume-ng-core</artifactId>
+        <version>1.9.0</version>
+</dependency>
+（2）编写代码
+package com.atguigu;
+
+import org.apache.flume.Context;
+import org.apache.flume.EventDeliveryException;
+import org.apache.flume.PollableSource;
+import org.apache.flume.conf.Configurable;
+import org.apache.flume.event.SimpleEvent;
+import org.apache.flume.source.AbstractSource;
+
+import java.util.HashMap;
+
+public class MySource extends AbstractSource implements Configurable, PollableSource {
+
+    //定义配置文件将来要读取的字段
+    private Long delay;
+    private String field;
+
+    //初始化配置信息
+    @Override
+    public void configure(Context context) {
+        delay = context.getLong("delay");
+        field = context.getString("field", "Hello!");
+    }
+
+    @Override
+    public Status process() throws EventDeliveryException {
+
+        try {
+            //创建事件头信息
+            HashMap<String, String> hearderMap = new HashMap<>();
+            //创建事件
+            SimpleEvent event = new SimpleEvent();
+            //循环封装事件
+            for (int i = 0; i < 5; i++) {
+                //给事件设置头信息
+                event.setHeaders(hearderMap);
+                //给事件设置内容
+                event.setBody((field + i).getBytes());
+                //将事件写入channel
+                getChannelProcessor().processEvent(event);
+                Thread.sleep(delay);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Status.BACKOFF;
+        }
+        return Status.READY;
+    }
+
+    @Override
+    public long getBackOffSleepIncrement() {
+        return 0;
+    }
+
+    @Override
+    public long getMaxBackOffSleepInterval() {
+        return 0;
+    }
+}
+```
+
+```java
+Sink不断地轮询Channel中的事件且批量地移除它们，并将这些事件批量写入到存储或索引系统、或者被发送到另一个Flume Agent。
+Sink是完全事务性的。在从Channel批量删除数据之前，每个Sink用Channel启动一个事务。批量事件一旦成功写出到存储系统或下一个Flume Agent，Sink就利用Channel提交事务。事务一旦被提交，该Channel从自己的内部缓冲区删除事件。
+Sink组件目的地包括hdfs、logger、avro、thrift、ipc、file、null、HBase、solr、自定义。官方提供的Sink类型已经很多，但是有时候并不能满足实际开发当中的需求，此时我们就需要根据实际需求自定义某些Sink。
+官方也提供了自定义sink的接口：
+https://flume.apache.org/FlumeDeveloperGuide.html#sink根据官方说明自定义MySink需要继承AbstractSink类并实现Configurable接口。
+实现相应方法：
+configure(Context context)//初始化context（读取配置文件内容）
+process()//从Channel读取获取数据（event），这个方法将被循环调用。
+使用场景：读取Channel数据写入MySQL或者其他文件系统。
+
+
+package com.atguigu;
+
+import org.apache.flume.*;
+import org.apache.flume.conf.Configurable;
+import org.apache.flume.sink.AbstractSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MySink extends AbstractSink implements Configurable {
+
+    //创建Logger对象
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractSink.class);
+
+    private String prefix;
+    private String suffix;
+
+    @Override
+    public Status process() throws EventDeliveryException {
+
+        //声明返回值状态信息
+        Status status;
+
+        //获取当前Sink绑定的Channel
+        Channel ch = getChannel();
+
+        //获取事务
+        Transaction txn = ch.getTransaction();
+
+        //声明事件
+        Event event;
+
+        //开启事务
+        txn.begin();
+
+        //读取Channel中的事件，直到读取到事件结束循环
+        while (true) {
+            event = ch.take();
+            if (event != null) {
+                break;
+            }
+        }
+        try {
+            //处理事件（打印）
+            LOG.info(prefix + new String(event.getBody()) + suffix);
+
+            //事务提交
+            txn.commit();
+            status = Status.READY;
+        } catch (Exception e) {
+
+            //遇到异常，事务回滚
+            txn.rollback();
+            status = Status.BACKOFF;
+        } finally {
+
+            //关闭事务
+            txn.close();
+        }
+        return status;
+    }
+
+    @Override
+    public void configure(Context context) {
+
+        //读取配置文件内容，有默认值
+        prefix = context.getString("prefix", "hello:");
+
+        //读取配置文件内容，无默认值
+        suffix = context.getString("suffix");
+    }
+}
+```
+
