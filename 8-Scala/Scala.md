@@ -1294,3 +1294,549 @@ object Scala10_Object_Abstract_3 {
 }
 ```
 
+### 特征
+
+```scala
+    // TODO 面向对象 - 特征
+    // 将多个对象中相同的特征，从对象中剥离出来，形成独立的一个结构，称之为trait（特征）
+    // 如果一个对象符合这个特征，那么可以将这个特征加入到这个对象，这个加入的过程，称之为混入(extends)
+
+    // 如果一个类只有一个特征时，采用extends关键字进行混入
+    // 但是一个类如果有多个特征，这个时候，第一个特征采用extends，后续采用with
+
+    // 如果类存在父类的场合，并同时具备了某个特征，
+    // 需要使用extends关键字继承父类，使用with关键字来混入特征
+ trait eat {
+        def eat():Unit
+    }
+    trait Runnable {
+        def run():Unit
+    }
+    class Person extends Object with Runnable {
+        override def run(): Unit = {
+            println("run...")
+        }
+    }
+    class Dog extends Runnable {
+        override def run(): Unit = {
+            println("run...")
+        }
+```
+```scala
+// 特征的动态混入
+object Scala12_Object_Trait_1 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO 面向对象 - 特征
+        // 动态混入
+        val user = new User() with Updateuser
+        user.insertUser()
+        user.updateUser()
+
+    }
+//    class Parent {
+//                def updateUser(): Unit = {
+//                    println("update user...")
+//                }
+//    }
+    trait Updateuser {
+        def updateUser(): Unit = {
+            println("update user...")
+        }
+    }
+    class User {
+        def insertUser(): Unit = {
+            println("insert user...")
+        }
+//        def updateUser(): Unit = {
+//            println("update user...")
+//        }
+    }
+}
+```
+
+```scala
+object Scala12_Object_Trait_2 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO 面向对象 - 特征(特质)
+        // 可以将trait理解为接口和抽象类的结合体
+        new User()
+
+    }
+
+    trait Test extends Exception {
+        def test(): Unit
+    }
+    class Person{
+
+    }
+    class User extends Test {
+        override def test(): Unit = {
+
+        }
+    }
+}
+```
+
+        // 1. 初始化顺序问题
+        //    父类的特质 > 父类 > 特质1, 特质2 > 当前类
+```scala
+特征  功能叠加
+def main(args: Array[String]): Unit = {
+
+        // TODO 面向对象 - 特征(特质)
+
+        // java中不能类的多继承 ： 砖石问题
+        // scala采用了一种功能叠加的方式解决砖石问题
+        // super不是父特质的意思，是上一级（上一个）的意思
+        new MySQL().operData()
+
+    }
+    trait Operator {
+        def operData(): Unit = {
+            println("操作数据")
+        }
+    }
+    trait DB extends Operator{
+        override def operData(): Unit = {
+            print("向数据库中")
+            super.operData()
+        }
+    }
+    trait Log extends Operator {
+        override def operData(): Unit = {
+            print("向日志文件中")
+            super[Operator].operData()
+        }
+    }
+    class MySQL extends DB with Log {
+
+    }
+```
+
+### 扩展
+
+```scala
+扩展
+类型检查和转换
+class Person{
+}
+object Person {
+    def main(args: Array[String]): Unit = {
+
+        val person = new Person
+
+        //（1）判断对象是否为某个类型的实例
+        val bool: Boolean = person.isInstanceOf[Person]
+
+        if ( bool ) {
+            //（2）将对象转换为某个类型的实例
+            val p1: Person = person.asInstanceOf[Person]
+            println(p1)
+        }
+
+        //（3）获取类的信息
+        val pClass: Class[Person] = classOf[Person]
+        println(pClass)
+    }
+}
+思考一个问题: 字符串真的不可变吗？
+枚举类和应用类
+object Test {
+    def main(args: Array[String]): Unit = {
+        println(Color.RED)
+    }
+}
+
+// 枚举类
+object Color extends Enumeration {
+    val RED = Value(1, "red")
+    val YELLOW = Value(2, "yellow")
+    val BLUE = Value(3, "blue")
+}
+
+// 应用类
+object AppTest extends App {
+    println("application");
+}
+Type定义新类型
+使用type关键字可以定义新的数据数据类型名称，本质上就是类型的一个别名
+object Test {
+    def main(args: Array[String]): Unit = {
+        type S = String
+        var v : S = "abc"
+    }
+}
+```
+
+## 11.集合
+
+### 数组
+
+严格意义上 数组不是集合
+
+ 集合分为两大类：可变集合，不可变集合
+
+ Scala默认提供的集合都是不可变。
+
+```scala
+   def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 数组
+        // 集合分为两大类：可变集合，不可变集合
+        // Scala默认提供的集合都是不可变。
+//        val array = new Array[String](3)
+//        array(0) = "a"
+//        array(1) = "a"
+//        array(2) = "a"
+        // 使用集合的伴生对象构建集合，并同时初始化
+        val array1 = Array(1,2,3,4)
+        val array2 = Array(5,6,7,8)
+        //val array2 = Array.apply(1,2,3,4)
+
+        // 访问
+        //val ints: Array[Int] = array1.+:(5)
+        // scala中如果运算符是以冒号结尾，那么运算规则为从后向前计算
+        val ints = 5 +: array1
+
+        //val ints1: Array[Int] = array1.:+(5)
+        val ints1 = array1 :+ 5
+
+        val ints2 = array1 ++ array2
+        val ints3 = array1 ++: array2
+
+        //println(array1 eq ints)
+        //println(array1 eq ints1)
+       // println(ints eq ints1)
+
+
+        // TODO 遍历
+        //println(ints.mkString(","))
+        //println(ints1.mkString(","))
+        //println(ints2.mkString(","))
+
+        // foreach方法是一个循环的方法，需要传递一个参数，这个从参数的类型是函数类型
+        //  函数类型 ： Int => U
+        def foreachFunction(num:Int): Unit = {
+            println(num)
+        }
+
+        //array1.foreach(foreachFunction)
+        //array1.foreach((num:Int)=>{println(num)})
+        //array1.foreach((num:Int)=>println(num))
+        //array1.foreach((num)=>println(num))
+        //array1.foreach(num=>println(num))
+        array1.foreach(println(_))
+    }
+}
+```
+
+```scala
+object Scala02_Collection {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 数组 - 可变数组
+        //val buffer = new ArrayBuffer[String]()
+        val buffer = ArrayBuffer("a", "b", "c")
+        println(buffer)
+        // TODO 操作
+        //buffer.append("a", "b", "c", "d")
+       // buffer.appendAll(Array("a", "b", "c"))
+        //buffer.insert(100, "f")
+
+        //buffer.update(0, "e")
+        //buffer(0) = "e"
+
+        //buffer.remove(2)
+        //buffer.remove(2,2)
+
+        val strings: ArrayBuffer[String] = buffer - "a"
+
+        println(buffer eq strings)
+        println(buffer)
+        println(strings)
+
+
+
+    }
+}
+
+```
+
+### 常见方法
+
+```scala
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+        val array = Array(1,2,3,4)
+
+        println(array.size)
+        println(array.length)
+        println(array.isEmpty)
+        println(array.contains(2))
+        println(array.distinct.mkString(","))
+        println(array.reverse.mkString(","))
+
+        println(array.mkString(","))
+        array.foreach(println)
+        array.iterator
+        
+        
+        
+        
+        // TODO - 集合 - 方法
+        val array = ArrayBuffer(1,2,3,4)
+
+        // 从集合中获取部分数据
+        println(array.head)
+        println(array.tail)
+        println(array.tails)
+        println(array.last)
+        println(array.init) // 初始
+        println(array.inits)
+
+        // 取前几个
+        println(array.take(3))
+        //println(array.reverse.take(2).reverse)
+        println(array.takeRight(2))
+        println(array.drop(1))
+        println(array.dropRight(1))
+
+```
+
+```scala
+object Scala03_Collection_2 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+        val array = ArrayBuffer(1,2,3,4, 5)
+
+        println(array.sum)
+        println(array.max)
+        println(array.min)
+        println(array.product)
+
+        // 自定义数据操作的方法
+        // 集合的数据无论是多少，最基本的数据操作其实都是两两计算。
+        // map => reduce => 简化，规约（聚合）
+
+        def reduceFunction(x : Int, y : Int): Int = {
+            x + y
+        }
+
+        //println(array.reduce(reduceFunction))
+        //println(array.reduce((x:Int, y:Int)=>{x + y}))
+        //println(array.reduce((x:Int, y:Int)=>x + y))
+        //println(array.reduce((x, y)=>x + y))
+        println(array.reduce(_ - _))  // -13
+        println(array.reduceLeft(_ - _)) // -13
+
+        // 【1，2，3，4】
+        //  (((1 + 2) + 3) + 4)
+        // reversed.reduceLeft[B]((x, y) => op(y, x))
+        // 【1，2，3，4, 5】
+        // 【5，4，3，2，1】
+        //  1 - (2 - (3 - (4 - 5)))
+        // 【1，2，3，4】
+        // (1 - (2 - (3 - 4)))
+        println(array.reduceRight(_ - _)) // 3
+
+
+```
+
+```scala
+object Scala03_Collection_3 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+        val array = ArrayBuffer(1,2,3,4)
+        val num = 5
+
+        // 折叠
+        //println(array.fold(5)(_ - _))
+
+        // (((5 - 1) - 2) - 3) - 4
+        //println(array.foldLeft(5)(_ - _))
+
+        // reversed.foldLeft(z)((x, y) => op(y, x))
+        // 【1，2，3，4】
+        // 【4，3，2，1】
+        //  1 - (2  - (3 - (4 - 5)))
+        println(array.foldRight(5)(_ - _))
+
+        //println(array.scan(5)(_ - _))
+        println(array.scanRight(5)(_-_))
+
+```
+
+### 功能函数
+
+#### map
+
+```scala
+map
+object Scala04_Collection {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+        val array = ArrayBuffer(1,2,3,4)
+
+        // TODO 功能函数：由集合对象提供函数执行自定义的功能
+        //  1. map => 映射(转换) => K->V
+        //     a => b
+
+        // map方法需要传递一个参数，这个参数的类型为函数类型: Int => B
+        def mapFunction( num:Int ): Int = {
+            num * 2
+        }
+
+        //println(array.map(mapFunction))
+
+//        println(array.map(
+//            (num:Int) => {
+//                num * 2
+//            }
+//        ))
+
+        println(array.map(_*2))
+
+    }
+
+}
+
+```
+
+#### flatMap
+
+```scala
+flatMap
+object Scala04_Collection_1 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+//        val array = ArrayBuffer(
+//            ArrayBuffer(
+//                ArrayBuffer(1,2),ArrayBuffer(5,6)
+//            ), ArrayBuffer(
+//                ArrayBuffer(3,4),ArrayBuffer(7,8)
+//            )
+//        )
+
+        //println(array.length)
+        // 将整体拆分成个体的操作，称之为扁平化
+        // 扁平化操作只能对最外层进行操作
+        //println(array.flatten.flatten)
+
+        val array = Array(
+            "Hello Scala", "Hello Hadoop"
+        )
+
+        //println(array.flatten.mkString(","))
+
+        println(array.flatMap(
+            str => {
+                str.split(" ")
+            }
+        ).mkString(","))
+
+
+
+    }
+
+}
+```
+
+#### filter
+
+```scala
+
+object Scala04_Collection_2 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+        val array = ArrayBuffer(1,2,3,4)
+
+        // filter方法可以对集合中的每一条数据进行筛选过滤
+        // 满足条件（true）的数据保留，不满足条件(false)的数据丢弃
+        val r = array.filter(
+            num => {
+                num % 2 != 0
+            }
+        )
+        println(r)
+    }
+
+}
+```
+
+#### groupBy
+
+```scala
+
+object Scala04_Collection_3 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+//        val array = ArrayBuffer(1,2,3,4)
+//
+//        // 根据指定的规则对每一条数据进行分组
+//        val r = array.groupBy(
+//            num => {
+////                if ( num % 2 == 0 ) {
+////                    "偶数"
+////                } else {
+////                    "奇数"
+////                }
+//                num % 2
+//            }
+//        )
+//
+//        println(r)
+        val array = ArrayBuffer(
+            "Hello", "Scala", "Hadoop", "Spark"
+        )
+
+        println(array.groupBy(_.substring(0, 1)))
+
+
+    }
+
+}
+```
+
+#### sortBy
+
+```scala
+object Scala04_Collection_4 {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 方法
+        //val array = ArrayBuffer(1,4,2,3)
+        val array = ArrayBuffer("1", "11", "2", "3", "22")
+
+        // 排序:通过指定的规则对每一条数据进行排序处理， 默认为升序
+        println(array.sortBy(
+            num => num.toInt
+        ))
+
+        println(array.sortBy(num => num.toInt)(Ordering.Int.reverse))
+
+
+    }
+
+}
+
+```
+
