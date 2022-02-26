@@ -1840,9 +1840,9 @@ object Scala04_Collection_4 {
 
 ```
 
-# Scala集合
+## Scala集合
 
-## Seq &List
+### Seq &List
 
 + 描述的是数据有序，可以放重复顺序  就是先插入放前面 并不会自动排序
 
@@ -1856,13 +1856,13 @@ object Scala04_Collection_4 {
 
 
 
-## Set 
+### Set 
 
 + 数据无序，不可重复
-+ 创建Set时默认是创建不可变集合
++ 创建Set时默认是创建不可n变集合
 + 如果需要创建可变的Set时 需要去导包 mutable.Set()
 
-## Map
+### Map
 
 + map存储的数据是K-V键值对
 + map描述了一个数据无序，k不能重复的集合
@@ -1871,3 +1871,229 @@ object Scala04_Collection_4 {
 + java中从HashMap中获取一个不存在的key，会返回null
 
   但是HashMap允许放空键(Key) 空值(Value)
+
+
+
+### Tuple
+
++ sclal可以将无关的元素组合在一起，形成一个整体来进行访问，这种整体结构称之元素组合
+
+
+
+### 小需求          // 不同省份的商品点击排行
+
+```scala
+package com.atguigu.bigdata.scala.chapter07
+
+object Scala10_Collection_Req {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 集合 - 需求
+        // 不同省份的商品点击排行
+        // word(省份-商品) - count（1）
+        val datas = List(
+            ("zhangsan", "河北", "鞋"),
+            ("lisi", "河北", "衣服"),
+            ("wangwu", "河北", "鞋"),
+            ("zhangsan", "河南", "鞋"),
+            ("lisi", "河南", "衣服"),
+            ("wangwu", "河南", "鞋"),
+            ("zhangsan", "河南", "鞋"),
+            ("lisi", "河北", "衣服"),
+            ("wangwu", "河北", "鞋"),
+            ("zhangsan", "河北", "鞋"),
+            ("lisi", "河北", "衣服"),
+            ("wangwu", "河北", "帽子"),
+            ("zhangsan", "河南", "鞋"),
+            ("lisi", "河南", "衣服"),
+            ("wangwu", "河南", "帽子"),
+            ("zhangsan", "河南", "鞋"),
+            ("lisi", "河北", "衣服"),
+            ("wangwu", "河北", "帽子"),
+            ("lisi", "河北", "衣服"),
+            ("wangwu", "河北", "电脑"),
+            ("zhangsan", "河南", "鞋"),
+            ("lisi", "河南", "衣服"),
+            ("wangwu", "河南", "电脑"),
+            ("zhangsan", "河南", "电脑"),
+            ("lisi", "河北", "衣服"),
+            ("wangwu", "河北", "帽子")
+        )
+
+        // TODO 将原始数据进行结构的转换
+        // (人，省份，商品) => (省份-商品， 1)
+        val mapDatas = datas.map(
+            t => {
+                (t._2 + "-" + t._3, 1)
+            }
+        )
+        // TODO 将转换结构后的数据进行分组
+        val groupDatas: Map[String, List[(String, Int)]] = mapDatas.groupBy(_._1)
+
+        // TODO 将分组后的数据进行统计聚合
+        val cntDatas = groupDatas.mapValues(
+            list => list.size
+        )
+        //println(cntDatas)
+        // TODO 将聚合的结果进行结构的转换
+        // 将相同省份的数据准备放在一起
+        // (省份-商品， count) => (省份，（商品，count）)
+        val mapDatas1 = cntDatas.toList.map(
+            kv => {
+                val k = kv._1
+                val cnt = kv._2
+                val ks = k.split("-")
+                (ks(0), (ks(1), cnt))
+            }
+        )
+//        println(mapDatas1)
+        // 河北 => List( （衣服，20），(鞋，10)， )
+        // TODO 将转换结构后的数据进行排序（降序）
+        val groupDatas1 =
+            mapDatas1.groupBy(_._1).mapValues(
+                list=> {
+                    list.map(_._2).sortBy(_._2)(Ordering.Int.reverse).take(3)
+                }
+            )
+
+
+
+        println(groupDatas1)
+
+    }
+
+}
+
+```
+
+队列
+
+```scala
+object Scala11_Collection_Queue {
+
+    def main(args: Array[String]): Unit = {
+        val que = new mutable.Queue[String]()
+        // 添加元素
+        que.enqueue("a", "b", "c")
+        val que1: mutable.Queue[String] = que += "d"
+        println(que eq que1)
+        // 获取元素
+        println(que.dequeue())
+        println(que.dequeue())
+        println(que.dequeue())
+
+
+
+    }
+
+}
+```
+
+### 多线程,并发
+
+```scala
+
+object Scala12_Collection_Par {
+
+    def main(args: Array[String]): Unit = {
+
+//        val result1 = (0 to 100).map{
+//            x => {
+//                Thread.currentThread.getName
+//            }
+//        }
+        val result2 = (0 to 100).par.map{
+             x =>  {
+                 Thread.currentThread.getName
+             }
+        }
+
+        //println(result1)
+        println(result2)
+
+
+    }
+
+}
+```
+
+多数据集方法
+
+```scala
+object Scala13_Collection_Method_1 {
+
+    def main(args: Array[String]): Unit = {
+
+        val list1 = List(1,2,3,4)
+        val list2 = List(3,4,5,6)
+
+        // 交集，并集，差集
+        println(list1.intersect(list2))
+        println(list1.union(list2))
+        println(list1.diff(list2))
+
+
+    }
+
+}
+```
+
+### 滑动窗口
+
+将集合中一定范围的数据作为整体来使用，将这个范围称之为窗口
+
+这个范围中的数据，称之为窗口数据
+
+这个窗口随着计算向后滑动，把这个窗口也称之为滑动窗口
+
+如果在滑动的过程中，数据没有重复，那么就称之为滚动窗口
+
+````scala
+object Scala13_Collection_Method_2 {
+
+    def main(args: Array[String]): Unit = {
+
+        val list1 = List(1,2,3,4,5,6,7,8)
+
+        //println(list1.drop(1))
+
+        //list1.head + list1.tail.head
+
+        // 滑动窗口
+        // 滚动窗口
+        val iterator: Iterator[List[Int]] = list1.sliding(3, 3)
+        while (iterator.hasNext) {
+            val ints: List[Int] = iterator.next()
+            println(ints)
+        }
+
+
+    }
+
+}
+````
+
+### 拉链方法
+
+```scala
+object Scala13_Collection_Method_3 {
+
+    def main(args: Array[String]): Unit = {
+
+        val list1 = List(1,2,3,4)
+        val list2 = List(5,6,7,8,9, 10)
+
+        // 所谓的拉链，其实就是将两个集合相同的位置的数据连接在一起
+        //val tuples: List[(Int, Int)] = list1.zip(list2)
+        //println(tuples)
+
+        println(list2.zipWithIndex)
+
+
+
+    }
+
+}
+```
+
