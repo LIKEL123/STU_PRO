@@ -2097,3 +2097,518 @@ object Scala13_Collection_Method_3 {
 }
 ```
 
+### foldleft
+
+里面是函数柯里化，需要传入两个参数， 然后用第一个参数与后面参数做操作
+
+```scala
+object Scala13_Collection_Method_4 {
+
+    def main(args: Array[String]): Unit = {
+
+        val list1 = List(1,2,3,4)
+
+        // (A1, A1) => A1
+        //list1.reduce()
+
+        // (B, Int) => B
+        //list1.reduceLeft()
+
+        // (A1)((A1,A1)=>A1)
+        //list1.fold()()
+
+        // (B)((B, Int)=>B)
+        //println(list1.foldLeft("")(_ + _))
+
+        // "1234"
+
+        val map1 = mutable.Map(
+            ("a", 1), ("b", 2), ("c", 3)
+        )
+        val map2 = mutable.Map(
+            ("a", 4), ("d", 5), ("c", 6)
+        )
+
+        val map3 = map2.foldLeft(map1)(
+            (map, kv) => {
+                val key = kv._1
+                val cnt = kv._2
+                val oldCnt = map.getOrElse(key, 0)
+                map.update(key, oldCnt + cnt)
+                map
+            }
+        )
+        println(map3)
+
+
+
+    }
+
+}
+```
+
+
+
+# 注意： 使用匿名函数时，给定的参数直接返回，不能使用下划线代替，必须完整
+
+### 排序
+
+```scala
+
+object Scala13_Collection_Method_5 {
+
+    def main(args: Array[String]): Unit = {
+
+        val list1 = List(1,2,3,4)
+
+        //println(list1.map(_ * 2))
+//        list1.map {
+//            num => {
+//                num
+//            }
+//        }
+
+        val list2 = List(
+            "Hello Scala"
+        )
+
+        // 1 => N => List(N)
+        val words = list2.flatMap(
+            str => {
+                str.split(" ") // 容器（ Hello, Scala ）
+            }
+        )
+//        val words1 = list2.flatMap(_.split(" "))
+        //println(words)
+
+//        val list3 = List(
+//            List(1,2), List(3,4)
+//        )
+//
+//        val newlist = list3.flatMap(
+//            list => { // 整体
+//                list  // 容器
+//            }
+//        )
+        //println(newlist)
+
+//        val list4 = List(1,2,3,4)
+//
+//        val newList = list4.flatMap(
+//            num => {
+//                List(num)
+//            }
+//        )
+        //println(newList)
+
+        /*
+        val source: BufferedSource = Source.fromFile("data/word.txt")
+        val lines: Array[String] = source.getLines().toArray
+        source.close()
+
+        val wordCount =
+            lines
+                .flatMap(_.split(" "))
+                .groupBy(word=>word)
+                .mapValues(_.size)
+
+        println(wordCount)
+
+         */
+        // TODO 使用匿名函数时，给定的参数直接放回，不能使用下划线代替，必须完整，
+        def test( f : (String)=>Unit ): Unit = {
+            f("zhangsan")
+        }
+
+        test( (s:String)=>{println(s)} )
+        test( (s:String)=>println(s) )
+        test( (s)=>println(s) )
+        test( s=>println(s) )
+        test( s => println(s) )
+
+
+    }
+
+}
+```
+
+```scala
+object Scala13_Collection_Method_7 {
+
+    def main(args: Array[String]): Unit = {
+
+        val user1 = new User()
+        user1.age = 20
+        user1.salary = 2000
+        val user2 = new User()
+        user2.age = 30
+        user2.salary = 2000
+        val user3 = new User()
+        user3.age = 30
+        user3.salary = 1000
+
+        val users = List(
+            user1, user2, user3
+        )
+
+        //println(users.sortBy(_.age)(Ordering.Int.reverse))
+
+        // Tuple : 元组,可以默认排序，先比较第一个，如果相同，比较第二个，依此类推
+//        println(
+//            users.sortBy(
+//                user => {
+//                    ( user.age, user.salary )
+//                }
+//            )(Ordering.Tuple2[Int, Int]( Ordering.Int, Ordering.Int.reverse ))
+//        )
+
+        // 自定义排序
+        println(users.sortWith(
+            (user1, user2) => {
+                // 将你期望的结果，返回为true
+                //user1.salary > user2.salary
+                if ( user1.age < user2.age ) {
+                    true
+                } else if (user1.age == user2.age ) {
+                    user1.salary < user2.salary
+                } else {
+                    false
+                }
+            }
+        ))
+
+
+    }
+    class User {
+        var age : Int = _
+        var salary : Int = _
+
+        override def toString: String = {
+            return s"User[${age}, ${salary}]"
+        }
+    }
+}
+
+```
+
+
+
+
+
+## 模式匹配
+
+基本语法:
+
+模式匹配语法中，采用match关键字声明，每个分支采用case关键字进行声明，当需要匹配时，会从第一个case分支开始，如果匹配成功，那么执行对应的逻辑代码，如果匹配不成功，继续执行下一个分支进行判断。如果所有case都不匹配，那么会执行case _分支，类似于Java中default语句。如果不存在case _分支，那么会发生错误。
+
+```scala
+
+object ScalaMatch{
+    def main(args: Array[String]): Unit = {
+        var a: Int = 10
+        var b: Int = 20
+        var operator: Char = 'd'
+        var result = operator match {
+            case '+' => a + b
+            case '-' => a - b
+            case '*' => a * b
+            case '/' => a / b
+            case _ => "illegal"
+        }
+        println(result)
+    }
+}
+```
+
+### 匹配常量
+
+```scala
+def describe(x: Any) = x match {
+    case 5 => "Int five"
+    case "hello" => "String hello"
+    case true => "Boolean true"
+    case '+' => "Char +"
+}
+```
+
+### 匹配类型
+
+```scala
+def describe(x: Any) = x match {
+    case i: Int => "Int"
+    case s: String => "String hello"
+    case m: List[_] => "List"
+    case c: Array[Int] => "Array[Int]"
+    case someThing => "something else " + someThing
+}
+```
+
+### **匹配数组**
+
+```scala
+for (arr <- Array(Array(0), Array(1, 0), Array(0, 1, 0), Array(1, 1, 0), Array(1, 1, 0, 1), Array("hello", 90))) { // 对一个数组集合进行遍历
+
+​    val result = arr match {
+
+​        case Array(0) => "0" //匹配Array(0) 这个数组
+
+​        case Array(x, y) => x + "," + y //匹配有两个元素的数组，然后将将元素值赋给对应的x,y
+
+​        case Array(0, _*) => "以0开头的数组" //匹配以0开头和数组
+
+​        case _ => "something else"
+
+​    }
+
+​    println("result = " + result)
+```
+
+### **匹配列表**
+
+```scala
+for (list <- Array(List(0), List(1, 0), List(0, 0, 0), List(1, 0, 0), List(88))) {
+    val result = list match {
+        case List(0) => "0" //匹配List(0)
+        case List(x, y) => x + "," + y //匹配有两个元素的List
+        case List(0, _*) => "0 ..."
+        case _ => "something else"
+    }
+
+    println(result)
+}
+val list: List[Int] = List(1, 2, 5, 6, 7)
+
+list match {
+    case first :: second :: rest => println(first + "-" + second + "-" + rest)
+    case _ => println("something else")
+}
+```
+
+### 匹配元组
+
+```scala
+for (tuple <- Array((0, 1), (1, 0), (1, 1), (1, 0, 2))) {
+    val result = tuple match {
+        case (0, _) => "0 ..." //是第一个元素是0的元组
+        case (y, 0) => "" + y + "0" // 匹配后一个元素是0的对偶元组
+        case (a, b) => "" + a + " " + b
+        case _ => "something else" //默认
+    }
+    println(result)
+}
+
+   // 下面的代码中，使用模式匹配需要注意：
+        // 1. 匹配数据时，需要使用case关键字
+        // 2. case分支可能存在多个，那么需要将map的小括号换成大括号
+//        val list1 = list.map {
+//            case ((prv, item), cnt) => {
+//                (prv, (item, cnt * 2))
+//            }
+//        }
+//        println(list1)
+
+        val Array(first, second, _*) = Array(1, 7, 2, 9)
+        println(s"first=$first,second=$second")
+```
+
+### 匹配对象
+
+```scala
+class User(val name: String, val age: Int)
+object User{
+    def apply(name: String, age: Int): User = new User(name, age)
+    def unapply(user: User): Option[(String, Int)] = {
+        if (user == null)
+            None
+        else
+            Some(user.name, user.age)
+    }
+}
+
+val user: User = User("zhangsan", 11)
+val result = user match {
+    case User("zhangsan", 11) => "yes"
+    case _ => "no"
+}
+```
+
+
+
+
+
+
+
+### 样例类
+
+```scala
+object Scala05_Match {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 模式匹配 - 匹配规则
+        // 匹配对象
+        // apply : Attribute => Object
+        val user = getUser()
+        
+        // unapply : Object => Attribute
+
+        user match {
+            case User("zhangsan",40) => println("用户为张三")
+            case _ => println("什么也不是")
+        }
+
+    }
+    class User {
+        var name:String = _
+        var age:Int = _
+    }
+    object User {
+        // Object => Attribute
+        def unapply(user: User): Option[(String, Int)] = {
+            Option( (user.name, user.age) )
+        }
+
+        // Attribute => Object
+        def apply( name : String, age:Int ) = {
+            val user = new User()
+            user.name = name
+            user.age = age
+            user
+        }
+    }
+    def getUser() = {
+        User("zhangsan", 30)
+    }
+}
+```
+
+```scala
+object Scala06_Match {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 模式匹配 - 匹配规则
+
+        val user = getUser()
+        user.name = "lisi"
+        user match {
+            case User("zhangsan",40) => println("用户为张三")
+            case _ => println("什么也不是")
+        }
+
+    }
+    // 如果在类的前面的增加case关键字，这个类专门用于模式匹配，称之为样例类
+    // 在编译时，会自动生成大量的方法
+    // 1. 样例类会自动实现可序列化接口
+    // 2. 样例类的构造参数直接能够作为属性使用，但是不能修改，如果想要修改，需要将参数使用var声明
+    // 3. 增加和重写了大量的方法
+    // 4. 样例类自动生成伴生对象，而且其中自动声明了apply，unapply
+    case class User(var name:String, age:Int)
+    def getUser() = {
+        User("zhangsan", 40)
+    }
+}
+
+```
+
+### 偏函数
+
+```scala
+object Scala08_Match {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 模式匹配 - 偏函数
+
+        // 将该List(1,2,3,4,5,6,"test")中的Int类型的元素加一，并去掉字符串
+        val list : List[Any] = List(1,2,3,4,5,6,"test")
+
+        //val newlist = list.map(_ + 1)
+
+        //newlist.filter()
+
+        //val newlist : List[Any] = list.filter(_.isInstanceOf[Int])
+        //val newlist1 = newlist.map(_.asInstanceOf[Int] + 1)
+        //println(newlist1)
+        val list1 = list.map {
+            case i : Int => {
+                i + 1
+            }
+            case other => other
+        }.filter(_.isInstanceOf[Int])
+
+        println(list1)
+
+
+    }
+}
+
+```
+
+
+
+```scala
+所谓的偏函数，其实就是对集合中符合条件的数据进行处理的函数
+偏函数也是函数的一种，通过偏函数我们可以方便的对输入参数做更精确的检查。例如该偏函数的输入类型为Int，但是我们只考虑数值为1的时候，数据该如何处理，其他不考虑。
+
+object Scala09_Match {
+
+    def main(args: Array[String]): Unit = {
+
+        // TODO - 模式匹配 - 偏函数
+
+        val list : List[Any] = List(1,2,3,4,5,6,"test")
+
+        val list1 = list.collect{
+            case i : Int => i + 1
+        }
+
+        println(list1)
+
+
+    }
+}
+```
+
+## 异常
+
+```scala
+Scala异常语法处理上和Java类似，但是又不尽相同。
+Java异常：
+try {
+    int a = 10;
+    int b = 0;
+    int c = a / b;
+} catch (ArithmeticException e){
+    // catch时，需要将范围小的写到前面
+    e.printStackTrace();
+} catch (Exception e){
+    e.printStackTrace();
+} finally {
+    System.out.println("finally");
+}
+```
+
+```scala
+
+基本语法
+object ScalaException {
+    def main(args: Array[String]): Unit = {
+        try {
+            var n= 10 / 0
+        } catch {
+            case ex: ArithmeticException=>{
+                // 发生算术异常
+                println("发生算术异常")
+            }
+            case ex: Exception=>{
+                // 对异常处理
+                println("发生了异常1")
+            }
+        } finally {
+            println("finally")
+        }
+    }
+}
+```
+
