@@ -1,0 +1,133 @@
+# Spark笔记
+# 1-RDD
++ RDD是分布式弹性数据集
++ RDD是只封装逻辑，不做存储任何数据
+    ## 1.RDD的五大属性
++ 分区列表
++ 计算函数
++ 依赖关系
++ 分区器(kv键值对)
++ 位置优先性
+    + 移动数据不如移动计算
+
+##装饰者设计模式：为了扩展功能，相当于套娃
+
+##2.RDD的创建
++ 从内存中创建RDD
+ ```scala
+object Spark01_RDD_Instance_Memory {
+
+    def main(args: Array[String]): Unit = {
+
+        val conf = new SparkConf().setMaster("local[*]").setAppName("RDD")
+        val sc = new SparkContext(conf)
+
+        // TODO 从内存中创建RDD
+
+        // parallelize方法用于构建RDD,也可以将这个集合当成数据模型处理的数据源
+
+        // parallelize单词表示并行
+        val rdd: RDD[Int] = sc.parallelize(
+            Seq(1, 2, 3, 4)
+        )
+
+        // mkString
+        val rdd1 : RDD[Int] = sc.makeRDD(
+            Seq(1,2,3,4)
+        )
+
+
+        sc.stop()
+
+    }
+}
+```
++ 从文件中创建RDD
+```scala
+object Spark02_RDD_Instance_File {
+
+    def main(args: Array[String]): Unit = {
+
+        val conf = new SparkConf().setMaster("local[*]").setAppName("RDD")
+        val sc = new SparkContext(conf)
+
+        // TODO 从文件中创建RDD
+        //  textFile方法可以通过路径获取数据，所以可以将文件作为数据处理的数据源
+        //  textFile路径可以是相对路径，也可以是绝对路径，甚至可以为HDFS路径
+        //  textFile路径不仅仅可以为文件路径，也可以为目录路径, 还可以为通配符路径
+        //val rdd: RDD[String] = sc.textFile("data/word*.txt")
+
+        // 如果读取文件后，想要获取文件数据的来源
+        val rdd: RDD[(String, String)] = sc.wholeTextFiles("data/word*.txt")
+
+        rdd.collect().foreach(println)
+
+
+
+        sc.stop()
+
+    }
+}
+```
+
+## 3.RDD算子
++ 主要分为两大类 
+    +  转换算子 
+    +  行动算子
+    
+ + ###  1.转换算子 transform
++ map： 
+
+    将处理的数据逐条进行映射转换，这里的转换可以是类型的转换，也可以是值的转换。
+
+
+  ```scala
+object Spark01_RDD_Oper_Transform {
+
+    def main(args: Array[String]): Unit = {
+
+        val conf = new SparkConf().setMaster("local[*]").setAppName("RDD")
+        val sc = new SparkContext(conf)
+
+        // TODO 算子 - 转换 - map
+        val rdd = sc.makeRDD(List(1,2,3,4))
+
+        // map算子表示将数据源中的每一条数据进行处理
+        // map算子的参数是函数类型： Int => U(不确定)
+        def mapFunction( num : Int ): Int = {
+            num * 2
+        }
+
+        // A => B
+        //val rdd1: RDD[Int] = rdd.map(mapFunction)
+        val rdd1: RDD[Int] = rdd.map(_ * 2)
+
+        rdd1.collect().foreach(println)
+
+
+        sc.stop()
+
+    }
+}
+```
+
+
+
++  mapPartition
+
+    将待处理的数据以分区为单位发送到计算节点进行处理，这里的处理是指可以进行任意的处理，哪怕是过滤数据。
+    (备注)： 会放到内存里，作计算，并计算完不释放，内存产生冗余
+     
+   + 小问题 map和mappartitions的区别
+        + 数据处理角度：Map算子是分区内的一个数据的执行，类似于串行。而mappartitions是以分区为单位进行批处理操作  
+        + 功能的角度: 
+          Map算子主要目的将数据源中的数据进行转换和改变。但是不会减少或增多数据。MapPartitions算子需要传递一个迭代器，返回一个迭代器，没有要求的元素的个数保持不变，所以可以增加或减少数据
+        + 性能的角度：Map算子因为类似于串行操作，所以性能比较低，而是mapPartitions算子类似于批处理，所以性能较高。但是mapPartitions算子会长时间占用内存，那么这样会导致内存可能不够用，出现内存溢出的错误。所以在内存有限的情况下，不推荐使用。使用map操作。
+     
+     
+     
+     
+     
+     
+ 
+
