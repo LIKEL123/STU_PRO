@@ -123,11 +123,37 @@ object Spark01_RDD_Oper_Transform {
         + 功能的角度: 
           Map算子主要目的将数据源中的数据进行转换和改变。但是不会减少或增多数据。MapPartitions算子需要传递一个迭代器，返回一个迭代器，没有要求的元素的个数保持不变，所以可以增加或减少数据
         + 性能的角度：Map算子因为类似于串行操作，所以性能比较低，而是mapPartitions算子类似于批处理，所以性能较高。但是mapPartitions算子会长时间占用内存，那么这样会导致内存可能不够用，出现内存溢出的错误。所以在内存有限的情况下，不推荐使用。使用map操作。
++ mapPartitionsWithIndex
+   
+    将待处理的数据以分区为单位发送到计算节点进行处理，这里的处理是指可以进行任意的处理，哪怕是过滤数据，在处理时同时可以获取当前分区索引。
      
      
+     val dataRDD1 = dataRDD.mapPartitionsWithIndex(
+           (index, datas) => {
+                datas.map(index, _)
+           }
+       )
      
++ flatmap
+
+    将处理的数据进行扁平化后再进行映射处理，所以算子也称之为扁平映射     
      
-     
-     
- 
+```
+val dataRDD = sparkContext.makeRDD(List(
+     List(1,2),List(3,4)
+ ),1)
+ val dataRDD1 = dataRDD.flatMap(
+     list => list
+ )
+```
+
+ + groupBy
+ 将数据根据指定的规则进行分组, 分区默认不变，但是数据会被打乱重新组合，我们将这样的操作称之为shuffle。极限情况下，数据可能被分在同一个分区中
+ ```scala
+一个组的数据在一个分区中，但是并不是说一个分区中只有一个组
+val dataRDD = sparkContext.makeRDD(List(1,2,3,4),1)
+val dataRDD1 = dataRDD.groupBy(
+    _%2
+)
+```
 
