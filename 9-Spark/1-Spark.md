@@ -157,3 +157,58 @@ val dataRDD1 = dataRDD.groupBy(
 )
 ```
 
++ reduceByKey
+    
+    将相同的key的value分在一个组中，然后进行reduce运算
+    
++ groupByKey
+    
+    将相同的key数据的value分在同一个组中
+    
++ aggreateByKey
+    
+    将数据根据不同的规则进行分区内计算和分区间计算
+
+```scala
+取出每个分区内相同key的最大值然后分区间相加
+// TODO : 取出每个分区内相同key的最大值然后分区间相加
+// aggregateByKey算子是函数柯里化，存在两个参数列表
+// 1. 第一个参数列表中的参数表示初始值
+// 2. 第二个参数列表中含有两个参数
+//    2.1 第一个参数表示分区内的计算规则
+//    2.2 第二个参数表示分区间的计算规则
+val rdd =
+    sc.makeRDD(List(
+        ("a",1),("a",2),("c",3),
+        ("b",4),("c",5),("c",6)
+    ),2)
+// 0:("a",1),("a",2),("c",3) => (a,10)(c,10)
+//                                         => (a,10)(b,10)(c,20)
+// 1:("b",4),("c",5),("c",6) => (b,10)(c,10)
+
+val resultRDD =
+    rdd.aggregateByKey(10)(
+        (x, y) => math.max(x,y),
+        (x, y) => x + y
+    )
+
+resultRDD.collect().foreach(println)
+```
+
++ foldByKey
+
+    当分区内计算规则和分区间计算规则相同时，aggregateByKey就可以简化为foldByKey
+    
+
+
+
+
+## 2.Action行动算子
+
+
+
+
+
+# 任务阶段切分
++ 阶段stage的数量等于shuffle(产生shuffle算子)操作的个数+1
++ task任务的数量等于所有阶段stage的最后一个RDD的分区数之和
