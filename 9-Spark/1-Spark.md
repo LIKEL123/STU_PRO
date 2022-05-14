@@ -212,3 +212,19 @@ resultRDD.collect().foreach(println)
 # 任务阶段切分
 + 阶段stage的数量等于shuffle(产生shuffle算子)操作的个数+1
 + task任务的数量等于所有阶段stage的最后一个RDD的分区数之和
+
+
+# 2.累加器和广播变量
+累加器用来把Executor端变量信息聚合到Driver端。在Driver程序中定义的变量，在Executor端的每个Task都会得到这个变量的一份新的副本，每个task更新这些副本的值后，传回Driver端进行merge。
+
+
+
+
+#Spark的UDF函数
+
+
+#SparkStreaming
++ Spark Streaming使用离散化流作为抽象表示 叫做DStream
+
+
+
