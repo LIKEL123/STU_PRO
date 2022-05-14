@@ -374,3 +374,36 @@ public class TransFormMap {
 
 - 事件事件：Event Time   就是数据产生的时间
 - 处理时间：Process Time  就是数据处理的时间
+
+
+
+## 2.水位线
+
+源码
+
+1- stream.assignTimestampsAndWatermarks() 这个方法需要传入一个WatermarkStrategy作为参数
+
+2-WatemarkStrategy中包含了一个时间戳分配器TimestampAssigner 和水位线生成器 WatermarkGenerator
+
++ TimestampAssigner：主要负责从流中数据元素的某个字段中提取时间戳，并分配给 
+
+元素。时间戳的分配是生成水位线的基础。 
+
++  WatermarkGenerator：主要负责按照既定的方式，基于时间戳生成水位线。在 
+
+WatermarkGenerator 接口中，主要又有两个方法：onEvent()和 onPeriodicEmit()。 
+
++  onEvent：每个事件（数据）到来都会调用的方法，它的参数有当前事件、时间戳， 
+
+以及允许发出水位线的一个 WatermarkOutput，可以基于事件做各种操作 
+
++  onPeriodicEmit：周期性调用的方法，可以由 WatermarkOutput 发出水位线。周期时间 
+
+为处理时间，可以调用环境配置的.setAutoWatermarkInterval()方法来设置，默认为 
+
+200ms
+
+
+
+## 3.窗口
+
