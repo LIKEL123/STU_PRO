@@ -407,3 +407,197 @@ WatermarkGenerator 接口中，主要又有两个方法：onEvent()和 onPeriodi
 
 ## 3.窗口
 
+### 窗口的分类
+
+1-按照驱动类型来分类
+
++ 计数窗口 count window
++ 时间窗口 time window 
+
+2-按照窗口分配数据的规则分类
+
++ 滚动窗口  Tumbling Window
++ 滑动窗口 Slinding Window
++ 会话窗口 Session Window
++ 全局窗口 Global Window
+
+### 窗口API
+
+主要是分为按键分区和非按键分区
+
+1-按键分区的窗口
+
+经过keyby之后在调用.window() 来进行定义窗口
+
+2-非按键分区的窗口
+
+直接调用windowall()  来定义窗口  
+
+注意：对于非按键分区的窗口手动来调大窗口算子的并行度是无效的，windowall本身就是一个非并行操作
+
+
+
+### 窗口分配器
+
+对于进行调用window() 之后需要传入一个window assigner 窗口分配器这个参数
+
+#### 时间
+
+1-滚动事件时间窗口
+
+```java
+窗口分配器由类 TumblingEventTimeWindows 提供，用法与滚动处理事件窗口完全一致。
+stream.keyBy(...)
+.window(TumblingEventTimeWindows.of(Time.seconds(5))) .aggregate(...)
+```
+
+2-滑动事件时间窗口
+
+```java
+窗口分配器由类 SlidingEventTimeWindows 提供，用法与滑动处理事件窗口完全一致。
+stream.keyBy(...)
+.window(SlidingEventTimeWindows.of(Time.seconds(10), Time.seconds(5)))
+.aggregate(...)
+```
+
+3-事件时间会话窗口
+
+```java
+窗口分配器由类 EventTimeSessionWindows 提供，用法与处理事件会话窗口完全一致。
+stream.keyBy(...)
+.window(EventTimeSessionWindows.withGap(Time.seconds(10)))
+.aggregate(...)
+```
+
+
+
+#### 计数
+
+1-滚动计数
+
+```java
+滚动计数窗口
+滚动计数窗口只需要传入一个长整型的参数 size，表示窗口的大小。
+stream.keyBy(...)
+.countWindow(10)
+我们定义了一个长度为 10 的滚动计数窗口，当窗口中元素数量达到 10 的时候，就会触发
+计算执行并关闭窗口
+```
+
+2-滑动计数窗口
+
+```java
+与滚动计数窗口类似，不过需要在.countWindow()调用时传入两个参数：size 和 slide，前
+者表示窗口大小，后者表示滑动步长。
+stream.keyBy(...)
+.countWindow(10，3)
+```
+
+
+
+### 窗口聚合函数
+
+1-规约函数 reduce  和 前面的转换算子一模一样
+
+2-聚合函数 aggregate 
+
++ aggregate函数的实现  ->  需要new 一个类 实现aggregateFunction这个接口，需要传入三个参数  和实现四个方法
+
+传入： IN  输入类型     ACC累加器类型  OUT输出类型   
+
+方法：
+
++ createAccumulator():创建一个累加器  是为聚合创建一个初始的状态   每个聚合任务指挥调用一次
+
++ add()：将输入的元素添加到累加器中。这就是基于聚合状态，对新来的数据进行进 
+
+  一步聚合的过程。方法传入两个参数：当前新到的数据 value，和当前的累加器 
+
+  accumulator；返回一个新的累加器值，也就是对聚合状态进行更新。每条数据到来之 
+
+  后都会调用这个方法。 
+
++ getResult()：从累加器中提取聚合的输出结果。也就是说，我们可以定义多个状态， 
+
+  然后再基于这些聚合的状态计算出一个结果进行输出。比如之前我们提到的计算平均 
+
+  值，就可以把 sum 和 count 作为状态放入累加器，而在调用这个方法时相除得到最终 
+
+  结果。这个方法只在窗口要输出结果时调用。 
+
++ merge()：合并两个累加器，并将合并后的状态作为一个累加器返回。这个方法只在 
+
+  需要合并窗口的场景下才会被调用；最常见的合并窗口（Merging Window）的场景 
+
+  就是会话窗口（Session Windows）。 
+
+
+
+# 四.多流转换
+
+## 1.分流
+
+1） 使用侧输出流进行分流
+
+将一条流拆成两条流 
+
+```java
+package com.dcit.chapter08;
+
+import com.dcit.chacpter01.ClickSource;
+import com.dcit.chacpter01.Event;
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
+
+import java.time.Duration;
+
+public class SplitStreamTest {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+
+        SingleOutputStreamOperator<Event> stream = env.addSource(new ClickSource())
+                .assignTimestampsAndWatermarks(WatermarkStrategy.<Event>forBoundedOutOfOrderness(Duration.ZERO)
+                        .withTimestampAssigner(new SerializableTimestampAssigner<Event>() {
+                            @Override
+                            public long extractTimestamp(Event event, long l) {
+                                return event.timestamp;
+                            }
+                        }));
+        // 定义标签输出流
+        OutputTag<Tuple3<String, String, Long>> bobTag = new OutputTag<Tuple3<String, String, Long>>("Bob"){};
+        OutputTag<Tuple3<String, String, Long>> maryTag = new OutputTag<Tuple3<String, String, Long>>("Mary"){};
+
+        SingleOutputStreamOperator<Event> splitStream = stream.process(new ProcessFunction<Event, Event>() {
+            @Override
+            public void processElement(Event value, Context ctx, Collector<Event> out) throws Exception {
+                if (value.user == "Mary") {
+                    ctx.output(maryTag, Tuple3.of(value.user, value.url, value.timestamp));
+                } else if (value.user == "Bob") {
+                    ctx.output(bobTag, Tuple3.of(value.user, value.url, value.timestamp));
+                } else {
+                    out.collect(value);
+                }
+            }
+        });
+	// 获取侧输出流的数据
+    splitStream.getSideOutput(bobTag).print();
+    splitStream.getSideOutput(maryTag).print();
+
+        splitStream.print();
+
+
+        env.execute();
+
+    }
+}
+
+```
+
+## 2.合流
